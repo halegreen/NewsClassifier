@@ -6,7 +6,8 @@ import sklearn.metrics as metrics
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
-
+# from Vectorizer import LDA
+import numpy
 
 class SVM(BaseModel.BaseModel):
 
@@ -16,17 +17,31 @@ class SVM(BaseModel.BaseModel):
         self.__eval_X_vec = []
         self._svm_clf = None
 
-    def __train_n(self, train_X, train_y):
-        train_X = pd.DataFrame(train_X)
-        train_y = pd.DataFrame()
+    def __train_n(self, train_X, train_y, vec=1):
+        new_x = []
+        if vec == 2:
+            for x in train_X:
+                tmp = [t[1] for t in x]
+                new_x.append(tmp)
         model = SVC(C=1.0, kernel='linear')
+        #########
+        ## error: 数据没有对齐! 关键不知道LDA表示文档应该采用哪种形式?
+        #########
+        train_X = numpy.array(new_x, dtype=float)
+        train_y = numpy.array(train_y, dtype=float)
         self._svm_clf = model.fit(train_X, train_y)
 
 
     def __vectorize1(self, X_train, X_test):
+        X_train_new = []
+        X_test_new = []
+        for x in X_train:
+            X_train_new.append(' '.join(x.split()))
+        for x in X_test:
+            X_test_new.append(' '.join(x.split()))
         count_vect = CountVectorizer(decode_error='ignore')
-        X_train_counts = count_vect.fit_transform(X_train)
-        X_test_counts = count_vect.fit_transform(X_test)
+        X_train_counts = count_vect.fit_transform( X_train_new)
+        X_test_counts = count_vect.fit_transform(X_test_new)
         print 'X_train_counts.shape %s' % X_train_counts.shape
         tf_transfomer = TfidfTransformer(use_idf=True).fit(X_train_counts)
         X_train_tf = tf_transfomer.transform(X_train_counts)
@@ -38,16 +53,20 @@ class SVM(BaseModel.BaseModel):
         '''
         :function 使用LDA进行向量化
         '''
+        lda_model = LDA.LDA()
+        X_train_vec = lda_model.vectorize(X_train)
+        X_test_vec = lda_model.vectorize(X_test)
+        return X_train_vec, X_test_vec
 
 
     def __trans_data(self, data, train=False):
         if train:
             train_X = []
             train_y = []
-            n_data = pd.DataFrame(data)
-            for x, y in data.items():
-                train_X.append(x)
-                train_y.append(y)
+            for i_class, articles in data.items():
+                for article in articles:
+                    train_X.append(article)
+                    train_y.append(i_class)
             return train_X, train_y
         else:
             n_data = pd.DataFrame(data)
@@ -81,8 +100,9 @@ class SVM(BaseModel.BaseModel):
 
     def train(self, train_data):
         train_X, train_y = self.__trans_data(train_data, train=True)
-        train_X, self.__eval_X_vec = self.__vectorize1(train_X, self.__eval_X)
-        self.__train_n(train_X, train_y)
+        train_X, self.__eval_X_vec = self.__vectorize2(train_X, self.__eval_X)
+        self.__train_n(train_X, train_y, vec=2)
+        print 'train done'
 
     def predict(self, eval_X):
         return self.predict(eval_X)

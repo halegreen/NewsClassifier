@@ -8,6 +8,7 @@ import numba
 from sklearn import metrics
 from sklearn.metrics import classification_report
 import math
+import time
 
 class NaiveBayes(BaseModel.BaseModel):
 
@@ -17,7 +18,7 @@ class NaiveBayes(BaseModel.BaseModel):
         self.__word_dict = {}
         self.__class_prob = {}
 
-    @numba.jit()
+    @numba.jit(nogil=True)
     def __train(self, train_data):
         all_articles = train_data
 
@@ -25,19 +26,30 @@ class NaiveBayes(BaseModel.BaseModel):
             if feat not in self.__word_dict:
                 self.__word_dict[feat] = []
 
-        ## for every word in dict, get prob of class1
         for i_class, articles in all_articles.items():
             self.__class_prob[i_class] = float(len(articles)) / self.bow.article_num
+
+        ## train fast version
+        for i in range(1, self.bow.class_num + 1):
             for word in self.__word_dict.keys():
-                nk = 0
-                n = 0
-                for article in articles:
-                    for w in article:
-                        if w == word:
-                            nk += 1
-                    n += len(article)
+                nk = self.bow.feat_helper[i][word]
+                n = len(self.bow.article_word_dict[i])
                 prob = (nk + 1.0) / (n + len(self.bow.all_features))
                 self.__word_dict[word].append(prob)  ## 得到word与第i类的似然
+
+        # ## for every word in dict, get prob of class1
+        # for i_class, articles in all_articles.items():
+        #     self.__class_prob[i_class] = float(len(articles)) / self.bow.article_num
+        #     for word in self.__word_dict.keys():
+        #         nk = 0
+        #         n = 0
+        #         for article in articles:
+        #             for w in article:
+        #                 if w == word:
+        #                     nk += 1
+        #             n += len(article)
+        #         prob = (nk + 1.0) / (n + len(self.bow.all_features))
+        #         self.__word_dict[word].append(prob)  ## 得到word与第i类的似然
 
 
     def __eval(self, predicts, eval_data_y):
@@ -67,7 +79,7 @@ class NaiveBayes(BaseModel.BaseModel):
             predicts.append(self.__predict_single(data))
         return predicts
 
-    @numba.jit()
+    # @numba.autojit
     def __predict_single(self, article):
         article_words = article
         post_probs = {}
