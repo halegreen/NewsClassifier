@@ -81,7 +81,7 @@ class RandomForest(BaseModel.BaseModel):
         pass
 
     def __predict(self, test_data):
-        predicts = self._svm_clf.predict(self.__eval_X_vec)
+        predicts = self._rf_clf.predict(self.__eval_X_vec)
         return predicts
 
 
