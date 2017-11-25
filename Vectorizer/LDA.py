@@ -21,7 +21,7 @@ def get_train():
         for a in v:
             yield a
 
-all_articles = Preprocess.process_all_articles('data/fenghuangnews/', 10)
+all_articles = Preprocess.process_all_articles()
 data = [x for x in get_train()]
 dictionary = Dictionary(data)
 dictionary.save('lda.dict')

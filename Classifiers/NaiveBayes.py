@@ -4,6 +4,7 @@ Naive Bayes model for text classification task.
 @author: shaw 2017-10-28
 '''
 import BaseModel
+from Preprocesser import Preprocess
 import numba
 from sklearn import metrics
 from sklearn.metrics import classification_report
@@ -60,6 +61,8 @@ class NaiveBayes(BaseModel.BaseModel):
         if len(predicts) is not len(eval_data_y):
             print 'Error : Predicts dim %s is not equal to the eval_data_y dim %s!' \
                   % (len(predicts), len(eval_data_y))
+        for k in Preprocess.new_class_map2.keys():
+            print k, Preprocess.new_class_map2[k]
         ## 每一类的正确率、召回率
         print(classification_report(eval_data_y, predicts))
         ## 总体的正确率、召回率、F-score
